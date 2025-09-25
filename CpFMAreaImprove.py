@@ -174,28 +174,6 @@ def create_shared_resource(sharing_data, groups, itemid:str='', token:str='', us
         print(f"Error while getting token: {e}")
         return None
 
-def create_by_item_id(mapAreaItemID: str, token) -> Optional[str]:
-    """Function to create an offline map area."""
-    url = CREATE_URL
- 
-    payload = {
-        "mapAreaItemID": mapAreaItemID,
-        'tileServices': '[{"url":"https://gis.israntique.org.il/arcgis/rest/services/MapCacheNational_2019/MapServer","levels":"0,1,2,3,4,5,6"}]',
-        'f': 'json',
-        'token': token,
-    }
- 
-    headers = {}
-    files = []
- 
-    try:
-        response = requests.get(url, headers=headers, data=payload, files=files, verify=False)
-        print(response.text)
-        return response.json().get('id')
-    except Exception as e:
-        print(f"Error while getting token: {e}")
-        return None  
-
 def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, owner_password: str):
     """Main function to execute the offline map area copying process."""
     token = get_token(owner_username, owner_password)
@@ -244,7 +222,6 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
                 geometry = get_resource(resource_endpoint=offline_area.properties['area']['resource'], itemid=offline_area.properties['area']['itemId'], token=token, username=owner_username)
                 print(geometry)
                 itemidresource = add_resource(resource_endpoint=offline_area.properties['area']['resource'], text=geometry, itemid=itemid, token=token, username=owner_username)
-                create_by_item_id(itemidresource, token=token)
 
         except Exception as e:
             print('Failed creating map area for ' + offline_area.title)

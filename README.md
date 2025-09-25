@@ -4,12 +4,7 @@ This project contains scripts for managing offline map areas in ArcGIS Portal.
 
 ## Setup
 
-1. Install the required dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Configure your environment variables:
+Configure your environment variables:
    - Copy `config.env.example` to `config.env`
    - Edit `config.env` with your actual values:
      ```
