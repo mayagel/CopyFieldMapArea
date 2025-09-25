@@ -19,8 +19,8 @@ env.verbose = True
 CREATE_URL = "https://gis.israntique.org.il/arcgis/rest/services/Utilities/OfflinePackaging/GPServer/SetupMapArea/submitJob"
 GIS_REFERER_URL = "https://gis.israntique.org.il/portal"
 GIS_TOKEN_URL = "https://gis.israntique.org.il/portal/sharing/rest/generateToken"
-GIS_USERNAME = "Yagelm@israntique.org.il"
-GIS_PASSWORD = "Maimon#2"
+GIS_USERNAME = ""
+GIS_PASSWORD = ""
 
 def get_token() -> Optional[str]:
     """Function to get GIS token."""
@@ -198,8 +198,8 @@ def create_by_item_id(mapAreaItemID: str, token) -> Optional[str]:
 
 token = get_token()
 
-SOURCE_ITEM_ID = "ad6eb2c504a6487ca1acf3e667528d96"
-TARGET_ITEM_ID = "5773484a820b42eaadf26652222a7943"
+SOURCE_ITEM_ID = ""
+TARGET_ITEM_ID = ""
 
 # === LOGIN ===
 gis = GIS(url=GIS_REFERER_URL, token=token, verify_cert=False)
