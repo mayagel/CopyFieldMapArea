@@ -39,13 +39,14 @@ def get_token() -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json().get('token')
     except Exception as e:
         print(f"Error while getting token: {e}")
         return None  
     
+
 def create_offline_map_area(title, snippet, description, properties, text, target_id, token) -> Optional[str]:
     """Function to create an offline map area."""
     url = GIS_REFERER_URL + f"/sharing/rest/content/users/{GIS_USERNAME}/addItem"
@@ -66,12 +67,12 @@ def create_offline_map_area(title, snippet, description, properties, text, targe
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         # print(response.text)
 
         url2 = GIS_REFERER_URL + f"/sharing/rest/content/users/{GIS_USERNAME}/items/{target_id}/update"
 
-        response2 = requests.post(url2, headers=headers, data={"id": target_id, "token": token}, files=files)
+        response2 = requests.post(url2, headers=headers, data={"id": target_id, "token": token}, files=files, verify=False)
         # print(response2.text)
 
         return response.json().get('id')
@@ -79,6 +80,7 @@ def create_offline_map_area(title, snippet, description, properties, text, targe
         print(f"Error while getting token: {e}")
         return None  
     
+
 def add_relationship(itemid, targetid, token) -> Optional[str]:
     """Function to create an offline map area."""
     url = GIS_REFERER_URL + f"/sharing/rest/content/users/{GIS_USERNAME}/addRelationship"
@@ -95,7 +97,7 @@ def add_relationship(itemid, targetid, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
 
         return response.json()
@@ -117,7 +119,7 @@ def get_resource(resource_endpoint, itemid, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.get(url, headers=headers, params=payload, files=files)
+        response = requests.get(url, headers=headers, params=payload, files=files, verify=False)
         print(response.text)
 
         return response.json()
@@ -141,7 +143,7 @@ def add_resource(resource_endpoint, text, itemid, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
 
         return response.json().get('itemId')
@@ -165,7 +167,7 @@ def create_shared_resource(itemid, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json()
     except Exception as e:
@@ -187,7 +189,7 @@ def create_by_item_id(mapAreaItemID: str, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.get(url, headers=headers, data=payload, files=files)
+        response = requests.get(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json().get('id')
     except Exception as e:
@@ -200,7 +202,7 @@ SOURCE_ITEM_ID = "ad6eb2c504a6487ca1acf3e667528d96"
 TARGET_ITEM_ID = "5773484a820b42eaadf26652222a7943"
 
 # === LOGIN ===
-gis = GIS(url=GIS_REFERER_URL, token=token)
+gis = GIS(url=GIS_REFERER_URL, token=token, verify_cert=False)
 
 # Get the source offline map and its offline areas
 source_map_area_manager_item = gis.content.get(SOURCE_ITEM_ID)
@@ -245,4 +247,3 @@ for offline_area in offline_areas:
         print("Error details:", e)
 
 print("\n=== END OF COPY OPERATION ===")
-

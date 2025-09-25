@@ -7,13 +7,10 @@ import arcgis
 import json
 import sys
 import os
-from dotenv import load_dotenv
+from config import USERNAME, PASSWORD, SOURCE, TARGET
 print(arcgis.__version__)
 from arcgis import env
 env.verbose = True
-
-# Load environment variables from config.env file
-load_dotenv('config.env')
 
 # import warnings
 # warnings.filterwarnings("ignore")
@@ -44,7 +41,7 @@ def get_token(username: str, password: str) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json().get('token')
     except Exception as e:
@@ -71,12 +68,12 @@ def create_offline_map_area(title, snippet, description, properties, text, targe
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         # print(response.text)
 
         url2 = GIS_REFERER_URL + f"/sharing/rest/content/users/{username}/items/{target_id}/update"
 
-        response2 = requests.post(url2, headers=headers, data={"id": target_id, "token": token}, files=files)
+        response2 = requests.post(url2, headers=headers, data={"id": target_id, "token": token}, files=files, verify=False)
         # print(response2.text)
 
         return response.json().get('id')
@@ -100,7 +97,7 @@ def add_relationship(itemid, targetid, token, username: str) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
 
         return response.json()
@@ -122,7 +119,7 @@ def get_resource(resource_endpoint, itemid, token, username: str) -> Optional[st
     files = []
  
     try:
-        response = requests.get(url, headers=headers, params=payload, files=files)
+        response = requests.get(url, headers=headers, params=payload, files=files, verify=False)
         print(response.text)
 
         return response.json()
@@ -146,7 +143,7 @@ def add_resource(resource_endpoint, text, itemid, token, username: str) -> Optio
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
 
         return response.json().get('itemId')
@@ -154,14 +151,14 @@ def add_resource(resource_endpoint, text, itemid, token, username: str) -> Optio
         print(f"Error while getting token: {e}")
         return None
 
-def create_shared_resource(itemid, token, username: str) -> Optional[str]:
+def create_shared_resource(sharing_data, groups, itemid:str='', token:str='', username: str='') -> Optional[str]:
     """Function to create an offline map area."""
     url = GIS_REFERER_URL + f"/sharing/rest/content/users/{username}/items/{itemid}/share"
  
     payload = {
-        'everyone': 'false',
-        'org': 'true',
-        'groups': '',
+        'everyone': str(sharing_data=='everyone').lower(),
+        'org': str(sharing_data=='org').lower(),
+        'groups': groups,
         'f': 'json',
         'token': token,
     }
@@ -170,7 +167,7 @@ def create_shared_resource(itemid, token, username: str) -> Optional[str]:
     files = []
  
     try:
-        response = requests.post(url, headers=headers, data=payload, files=files)
+        response = requests.post(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json()
     except Exception as e:
@@ -192,7 +189,7 @@ def create_by_item_id(mapAreaItemID: str, token) -> Optional[str]:
     files = []
  
     try:
-        response = requests.get(url, headers=headers, data=payload, files=files)
+        response = requests.get(url, headers=headers, data=payload, files=files, verify=False)
         print(response.text)
         return response.json().get('id')
     except Exception as e:
@@ -208,7 +205,7 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
         return
 
     # === LOGIN ===
-    gis = GIS(url=GIS_REFERER_URL, token=token)
+    gis = GIS(url=GIS_REFERER_URL, token=token, verify_cert=False)
 
     # Get the source offline map and its offline areas
     source_map_area_manager_item = gis.content.get(source_area_map_id)
@@ -239,7 +236,9 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
             
             print("Created offline map area with item ID:", offline_area.id)
             itemid = create_offline_map_area(title=offline_area.title, snippet=offline_area.snippet, description=offline_area.description, properties=offline_area.properties, text=area_data, target_id=target_area_map_id, token=token, username=owner_username)
-            shared_req = create_shared_resource(itemid=itemid, token=token, username=owner_username)
+            groups = ",".join([g.id for g in offline_map_item.sharing.shared_with.get("groups", [])])
+            access_data = offline_map_item.access
+            shared_req = create_shared_resource(access_data,groups, itemid=itemid, token=token, username=owner_username)
             relationship = add_relationship(itemid=itemid, targetid=target_area_map_id, token=token, username=owner_username)
             if polygon:
                 geometry = get_resource(resource_endpoint=offline_area.properties['area']['resource'], itemid=offline_area.properties['area']['itemId'], token=token, username=owner_username)
@@ -255,10 +254,10 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
 
 if __name__ == "__main__":
     # Load configuration from environment variables
-    source_area_map_id = os.getenv('SOURCE')
-    target_area_map_id = os.getenv('TARGET')
-    owner_username = os.getenv('USERNAME')
-    owner_password = os.getenv('PASSWORD')
+    source_area_map_id = SOURCE
+    target_area_map_id = TARGET
+    owner_username = USERNAME
+    owner_password = PASSWORD
     
     # Check if all required environment variables are set
     if not all([source_area_map_id, target_area_map_id, owner_username, owner_password]):
