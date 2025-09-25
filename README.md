@@ -21,13 +21,6 @@ This project contains scripts for managing offline map areas in ArcGIS Portal.
 
 ## Usage
 
-### CpFMArea.py
-Runs the offline map area copying process with hardcoded configuration loaded from environment variables.
-
-```bash
-python CpFMArea.py
-```
-
 ### CpFMAreaImprove.py
 Improved version that accepts configuration via environment variables instead of command line arguments.
 
