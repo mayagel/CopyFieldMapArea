@@ -1,6 +1,7 @@
 # Filed Map Area Project
 
 This project contains scripts that gives example how to copy offline map areas in ArcGIS Portal. (workaround for the fastforward solution that is not working with the error "token required")
+using Rest-API instead the arcgis API.
 
 ## Setup
 
