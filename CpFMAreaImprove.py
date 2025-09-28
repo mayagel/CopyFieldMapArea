@@ -210,8 +210,10 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
                 polygon=True
                 if 'itemId' in offline_area.properties['area']:
                     area_data = gis.content.get(offline_area.properties['area']['itemId']).get_data()
+                    itemid = offline_area.properties['area']['itemId']
                 else:
                     area_data = offline_area.properties['extent']
+                    itemid = offline_area.properties['area']['resource'][offline_area.properties['area']['resource'].find('-')+1:]
             else: #this means its extent
                 area_data = offline_area.properties['extent']
             
@@ -222,7 +224,7 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
             shared_req = create_shared_resource(access_data,groups, itemid=itemid, token=token, username=owner_username)
             relationship = add_relationship(itemid=itemid, targetid=target_area_map_id, token=token, username=owner_username)
             if polygon:
-                geometry = get_resource(resource_endpoint=offline_area.properties['area']['resource'], itemid=offline_area.properties['area']['itemId'], token=token, username=owner_username)
+                geometry = get_resource(resource_endpoint=offline_area.properties['area']['resource'], itemid=itemid, token=token, username=owner_username)
                 print(geometry)
                 itemidresource = add_resource(resource_endpoint=offline_area.properties['area']['resource'], text=geometry, itemid=itemid, token=token, username=owner_username)
 
