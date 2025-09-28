@@ -169,6 +169,70 @@ def create_shared_resource(sharing_data, groups, itemid:str='', token:str='', us
         print(f"Error while getting token: {e}")
         return None
 
+def fix_renderer_to_layer(item_data):
+    # Check if it's a webmap and inspect operational layers
+    if isinstance(item_data, dict) and 'operationalLayers' in item_data:
+        print(f"Number of operational layers: {len(item_data['operationalLayers'])}")
+        
+        for i, layer in enumerate(item_data['operationalLayers']):
+            print(f"Layer {i}: type={layer.get('layerType', 'unknown')}, id={layer.get('id', 'unknown')}")
+            
+            # Fix missing renderer in drawingInfo
+            if 'layerDefinition' in layer and 'drawingInfo' in layer['layerDefinition']:
+                drawing_info = layer['layerDefinition']['drawingInfo']
+                print(f"  Drawing info keys: {list(drawing_info.keys())}")
+                
+                if 'renderer' not in drawing_info:
+                    print(f"  Adding default renderer to layer {i}")
+                    # Add a simple default renderer
+                    drawing_info['renderer'] = {
+                        "type": "simple",
+                        "symbol": {
+                            "type": "esriSMS",
+                            "style": "esriSMSCircle",
+                            "color": [76, 115, 0, 255],
+                            "size": 8,
+                            "angle": 0,
+                            "xoffset": 0,
+                            "yoffset": 0,
+                            "outline": {
+                                "color": [152, 230, 0, 255],
+                                "width": 1
+                            }
+                        }
+                    }
+                    return item_data
+
+def load_offlineMAM_by_id(source_area_map_id:str, gis:GIS) -> OfflineMapAreaManager:
+    source_map_area_manager_item = gis.content.get(source_area_map_id)
+    
+    try:
+        offline_areas_manager = OfflineMapAreaManager(source_map_area_manager_item, gis=gis)
+        return offline_areas_manager
+    except Exception as e:
+        print(f"Error creating OfflineMapAreaManager: {e}")
+        print("Attempting to inspect the map area item data...")
+        
+        # Try to get the raw data to inspect and potentially fix the structure
+        try:
+            item_data = source_map_area_manager_item.get_data()
+            item_data = fix_renderer_to_layer(item_data)
+                    # If we fixed any layers, try to update the item and retry
+            try:
+                # Update the item with fixed data
+                source_map_area_manager_item.update(item_properties={'text': json.dumps(item_data)})
+                print("Item updated successfully, retrying OfflineMapAreaManager creation...")
+                offline_areas_manager = OfflineMapAreaManager(source_map_area_manager_item, gis=gis)
+                print("Successfully created OfflineMapAreaManager after fixes!")
+                return offline_areas_manager
+            except Exception as retry_e:
+                print(f"Retry failed even after fixes: {retry_e}")
+                return
+                    
+        except Exception as debug_e:
+            print(f"Error inspecting item data: {debug_e}")
+            return
+    
 def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, owner_password: str):
     """Main function to execute the offline map area copying process."""
     token = get_token(owner_username, owner_password)
@@ -181,100 +245,15 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
     gis = GIS(url=GIS_REFERER_URL, token=token, verify_cert=False)
 
     # Get the source offline map and its offline areas
-    source_map_area_manager_item = gis.content.get(source_area_map_id)
+    offline_areas = load_offlineMAM_by_id(source_area_map_id, gis).list()
     
-    # Debug: Print information about the source map area item
-    print(f"Source map area item type: {source_map_area_manager_item.type}")
-    print(f"Source map area item title: {source_map_area_manager_item.title}")
-    
-    try:
-        offline_areas = OfflineMapAreaManager(source_map_area_manager_item, gis=gis).list()
-    except Exception as e:
-        print(f"Error creating OfflineMapAreaManager: {e}")
-        print("Attempting to inspect the map area item data...")
-        
-        # Try to get the raw data to inspect and potentially fix the structure
-        try:
-            item_data = source_map_area_manager_item.get_data()
-            print("Map area item data structure:")
-            print(f"Keys in item data: {list(item_data.keys()) if isinstance(item_data, dict) else 'Not a dict'}")
-            
-            # Check if it's a webmap and inspect operational layers
-            if isinstance(item_data, dict) and 'operationalLayers' in item_data:
-                print(f"Number of operational layers: {len(item_data['operationalLayers'])}")
-                fixed_layers = False
-                
-                for i, layer in enumerate(item_data['operationalLayers']):
-                    print(f"Layer {i}: type={layer.get('layerType', 'unknown')}, id={layer.get('id', 'unknown')}")
-                    
-                    # Fix layer type if it's incorrect
-                    if layer.get('layerType') == 'ArcGISFeatureLayer' and 'layerDefinition' in layer:
-                        # This might be a misidentified layer type, try to determine correct type
-                        if 'url' in layer:
-                            if 'ImageServer' in layer['url']:
-                                layer['layerType'] = 'ArcGISImageServiceLayer'
-                            elif 'MapServer' in layer['url']:
-                                layer['layerType'] = 'ArcGISMapServiceLayer'
-                            elif 'FeatureServer' in layer['url']:
-                                layer['layerType'] = 'ArcGISFeatureLayer'
-                        print(f"  Fixed layer type to: {layer['layerType']}")
-                        fixed_layers = True
-                    
-                    # Fix missing renderer in drawingInfo
-                    if 'layerDefinition' in layer and 'drawingInfo' in layer['layerDefinition']:
-                        drawing_info = layer['layerDefinition']['drawingInfo']
-                        print(f"  Drawing info keys: {list(drawing_info.keys())}")
-                        
-                        if 'renderer' not in drawing_info:
-                            print(f"  Adding default renderer to layer {i}")
-                            # Add a simple default renderer
-                            drawing_info['renderer'] = {
-                                "type": "simple",
-                                "symbol": {
-                                    "type": "esriSMS",
-                                    "style": "esriSMSCircle",
-                                    "color": [76, 115, 0, 255],
-                                    "size": 8,
-                                    "angle": 0,
-                                    "xoffset": 0,
-                                    "yoffset": 0,
-                                    "outline": {
-                                        "color": [152, 230, 0, 255],
-                                        "width": 1
-                                    }
-                                }
-                            }
-                            fixed_layers = True
-                
-                # If we fixed any layers, try to update the item and retry
-                if fixed_layers:
-                    print("Attempting to fix the map area item and retry...")
-                    try:
-                        # Update the item with fixed data
-                        source_map_area_manager_item.update(item_properties={'text': json.dumps(item_data)})
-                        print("Item updated successfully, retrying OfflineMapAreaManager creation...")
-                        offline_areas = OfflineMapAreaManager(source_map_area_manager_item, gis=gis).list()
-                        print("Successfully created OfflineMapAreaManager after fixes!")
-                    except Exception as retry_e:
-                        print(f"Retry failed even after fixes: {retry_e}")
-                        print("Skipping this source map area due to persistent validation errors.")
-                        return
-                else:
-                    print("No fixable issues found, skipping this source map area.")
-                    return
-                    
-        except Exception as debug_e:
-            print(f"Error inspecting item data: {debug_e}")
-            print("Skipping this source map area due to inspection errors.")
-            return
 
     for ids in offline_areas:
         print('found id in source map: ' + ids.title)
 
     # Get the target offline map and its offline areas
     offline_map_item = gis.content.get(target_area_map_id)
-    offline_map = OfflineMapAreaManager(offline_map_item, gis=gis)
-    offline_map._token = token
+    offline_map = load_offlineMAM_by_id(target_area_map_id, gis=gis)
 
     for ids in offline_map.list():
         print('found id in target_map: ' + ids.title)
