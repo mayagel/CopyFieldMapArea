@@ -206,9 +206,12 @@ def main(source_area_map_id: str, target_area_map_id: str, owner_username: str, 
         try:    
             #trying to get map area geometry data:
             polygon=False
-            if 'area' in offline_area.properties and 'itemId' in offline_area.properties['area']: #this means its polygon
+            if 'area' in offline_area.properties: #this means its polygon
                 polygon=True
-                area_data = gis.content.get(offline_area.properties['area']['itemId']).get_data()
+                if 'itemId' in offline_area.properties['area']:
+                    area_data = gis.content.get(offline_area.properties['area']['itemId']).get_data()
+                else:
+                    area_data = offline_area.properties['extent']
             else: #this means its extent
                 area_data = offline_area.properties['extent']
             
