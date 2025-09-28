@@ -1,11 +1,11 @@
 # Filed Map Area Project
 
-This project contains scripts for managing offline map areas in ArcGIS Portal.
+This project contains scripts that gives example how to copy offline map areas in ArcGIS Portal. (workaround for the fastforward solution that is not working with the error "token required")
 
 ## Setup
 
 Configure your environment variables:
-   - Copy `config.env.example` to `config.env`
+   - Copy `config.py.example` to `config.py`
    - Edit `config.env` with your actual values:
      ```
      USERNAME=your_username@domain.com
@@ -17,7 +17,7 @@ Configure your environment variables:
 ## Usage
 
 ### CpFMAreaImprove.py
-Improved version that accepts configuration via environment variables instead of command line arguments.
+Accepts configuration from config.py file and using it to get token of the owner of the filed mapo area and the source and targer id for the map to copy the feild-map-areas.
 
 ```bash
 python CpFMAreaImprove.py
@@ -25,7 +25,7 @@ python CpFMAreaImprove.py
 
 ## Configuration
 
-The `config.env` file contains:
+The `config.py` file contains:
 - `USERNAME`: Your GIS portal username
 - `PASSWORD`: Your GIS portal password  
 - `SOURCE`: Source map area ID to copy from
@@ -33,4 +33,4 @@ The `config.env` file contains:
 
 ## Security Note
 
-Never commit the `config.env` file to version control as it contains sensitive credentials. The `config.env.example` file serves as a template for other developers.
+Never commit the `config.py` file to version control as it contains sensitive credentials. The `config.py.example` file serves as a template for other developers.
